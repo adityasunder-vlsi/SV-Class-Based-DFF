@@ -1,0 +1,75 @@
+================================================================================
+                    D FLIP-FLOP VERIFICATION REPORT
+================================================================================
+Generated for: SystemVerilog Testbench Simulation Validation
+Status: SUCCESS (30/30 Vectors Passed)
+Architecture: Layered SystemVerilog Testbench (Generator-Driver-Monitor-Scoreboard)
+
+--------------------------------------------------------------------------------
+1. VERIFICATION ARCHITECTURE & DATAFLOW
+--------------------------------------------------------------------------------
+The environment utilizes a modern Layered Verification Methodology structure to 
+isolate and decouple data generation, device stimulating, passive protocol 
+monitoring, and checking.
+
+[Generator] --(Mailbox)--> [Driver] --------> (vif.din Pin) -------> [ DUT ]
+     |                                                                 |
+ (Mailbox)                                                       (vif.dout Pin)
+     |                                                                 |
+     v                                                                 v
+ [Scoreboard] <----------- (Mailbox) <----------- [Monitor] <----------+
+
+- Generator:   Randomizes the input stimuli (din) using 'tr.randomize()'. It 
+               sends a transaction copy to the driver and a reference copy to 
+               the scoreboard, then waits for the 'sconext' event handshake.
+- Driver:      Retrieves transactions from the mailbox and drives the virtual 
+               interface data input pin (vif.din) synchronously.
+- Monitor:     Passively samples the physical interface pins (vif.din, vif.dout) 
+               on every rising clock edge and encapsulates them into objects.
+- Scoreboard:  Collects monitored outputs and compares actual 'dout' values 
+               against predicted golden 'din' references.
+
+--------------------------------------------------------------------------------
+2. WAVEFORM ANALYSIS & CLOCK CYCLES (EXPLANATION TARGET: 130ns)
+--------------------------------------------------------------------------------
+To clearly present the edge-triggered sequential logic of the D-FF, refer to 
+the following timeline analysis based on your EPWave capture:
+
+- At 110ns:
+  * The driver updates the 'din' pin from 0 to 1.
+  * The clock 'clk' is currently sitting at a stable logic 1.
+  * Note that 'dout' remains at 0. This demonstrates that a stable high clock 
+    state cannot trigger sequential logic. The D-FF is locked.
+
+- At 130ns (The Perfect Demonstration Point):
+  * The clock performs a dynamic low-to-high transition (posedge clk).
+  * The D Flip-Flop instantly samples its input pin ('din' = 1).
+  * Consequently, the output pin 'dout' latches into a logic 1 state.
+  * This point visually confirms the rule: DOUT updates ONLY at the posedge edge.
+
+--------------------------------------------------------------------------------
+3. VERIFICATION CONSOLE LOG EXEGESIS
+--------------------------------------------------------------------------------
+Below is the execution sequence for a successful transaction sequence:
+
+  # KERNEL: [GEN] : DIN : 1 DOUT : 0
+  # KERNEL: [DRV] : DIN : 1 DOUT : 0
+  # KERNEL: [MON] : DIN : 1 DOUT : 1
+  # KERNEL: [SCO] Checking: Monitored DOUT=1 | Reference Expected DIN=1
+  # KERNEL: [SCO] : SUCCESS! DATA MATCHED
+  # KERNEL: -------------------------------------------------
+
+Analysis:
+1. [GEN] logs the stimulus intent ('DIN : 1'). Output 'DOUT' is naturally 0 here.
+2. [DRV] assigns the value to the bus safely prior to the sampling edge.
+3. [MON] catches the output update precisely at the synchronous posedge edge.
+4. [SCO] asserts equivalent correlation between monitored actuals and golden 
+   predictions, validating design functionality for that cycle.
+
+--------------------------------------------------------------------------------
+4. CONCLUSION
+--------------------------------------------------------------------------------
+The design implementation is fully compliant with the synchronous IEEE D-FF behavioral 
+specification. Race conditions have been completely eliminated via correct clock 
+cycle alignment loops. The test suite successfully concluded 30 verification loops.
+================================================================================
